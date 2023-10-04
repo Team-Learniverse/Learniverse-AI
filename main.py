@@ -7,6 +7,14 @@ import user_based, content_based, read_data
 
 app = FastAPI()
 
+#CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,  
+    allow_methods=["*"],  
+    allow_headers=["*"],  
+)
 
 @app.get("/")
 def root():

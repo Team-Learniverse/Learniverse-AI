@@ -55,5 +55,9 @@ def test_member_lang(memberId:int):
     recommend_list = content_based.get_rec_room_list_based_lang(memberId, 30)
     print(recommend_list)
 
+@app.get("/history")
+def test_history(memberId:int):
+    recommend_list = content_based.get_rec_room_list_based_history(memberId, 30)
+    print(recommend_list)
 
 

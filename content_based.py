@@ -3,6 +3,7 @@ import os
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 import read_data
+from datetime import datetime
 
 #text 정렬
 def data_sort(str):
@@ -122,7 +123,63 @@ def get_rec_room_list(target_row, top):
   #merged_df = pd.merge(rooms, result_df, on='roomId', how='inner')
   #return merged_df.sort_values(by='finalScore', ascending=False)
 
+#사용자 개발 언어 가져오기 
+def get_member_git_lang(memberId):
+  languages = ""
+  member_git_lang = read_data.get_data_find_member('memberGitLang', memberId)
+  for lang in member_git_lang['language']:
+    languages += lang +" "
+  return languages
 
+#날짜 차이 계산
+def cul_date(str_datetime):
+  date = str_datetime.split()
+  date_format = "%Y-%m-%d" 
+  comp_date = datetime.strptime(date[0], date_format)
+  current_date = datetime.now()
+  date_difference = current_date - comp_date
+  return date_difference.days
+
+
+#개발언어 리스트로 유사한 방 리스트 찾기
+def get_rec_room_list_based_lang(memberId, top):
+  rooms = read_data.get_data('rooms')
+  rooms = rooms.fillna(" ")
+
+  rooms['roomLanguages'] = rooms['roomLanguages'].apply(str_to_set)
+  
+  languages = get_member_git_lang(memberId)
+  lang_set = str_to_set(languages)
+  lang_result = []
+  date_result = []
+  #점수 계산
+  for this_id in rooms['roomId']:
+    this_data = rooms.loc[rooms['roomId'] == this_id].iloc[ 0]
+    this_lang_set = this_data['roomLanguages']
+    this_date = this_data['createdDate']
+
+    sim_lang = jaccard_similarity(this_lang_set, lang_set)
+
+    lang_result.append((this_id, sim_lang))
+    date_result.append(cul_date(this_date))
+
+  #결과 
+  room_ids = []
+  final_scores = []
+  for room_id in rooms['roomId']:
+    idx = rooms[rooms['roomId'] == room_id].index[0]
+    
+    sim_lang = lang_result[idx][1]
+    diff_date = date_result[idx]
+
+    final_score = float(sim_lang) * 0.5 + (1-diff_date*0.03) * 0.5
+    room_ids.append(room_id)
+    final_scores.append(final_score)
+
+  data = {'roomId':room_ids, 'finalScore':final_scores}
+  result = pd.DataFrame(data)
+  result = result.sort_values(by='finalScore', ascending=False)
+  return result[:top]
 
   
 

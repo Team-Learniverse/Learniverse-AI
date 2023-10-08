@@ -18,6 +18,14 @@ def get_data(coll_name):
     df.drop('_id', axis = 1, inplace = True)
     return df
 
+def get_data_find_member(coll_name, memberId):
+    collection = db[coll_name]
+    query = {"memberId":memberId}
+    data = list(collection.find(query))
+    df = pd.DataFrame(data)
+    df.drop('_id', axis = 1, inplace = True)
+    return df
+
 
 
 

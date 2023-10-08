@@ -50,4 +50,10 @@ def test_member_lang(memberId:int):
     recommend_list = user_based.get_lang_member_list(memberId)
     print(recommend_list)
 
+@app.get("/room/lang")
+def test_member_lang(memberId:int):
+    recommend_list = content_based.get_rec_room_list_based_lang(memberId, 30)
+    print(recommend_list)
+
+
 

@@ -4,7 +4,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 import os
 import pandas as pd
 import read_data
-
+from content_based import cul_date
 
 def join_list (joins, rooms) :
   rooms.drop('roomIntro', axis = 1, inplace = True)
@@ -48,6 +48,8 @@ def get_member_room_list() :
 
   return find_member_rooms(joins, recommend_members[0])
 
+
+
 #깃허브 언어 기준으로 유사 사용자 가져오기 
 def get_lang_member_list(target_id):
   member_git_lang = read_data.get_data('memberGitLang')
@@ -59,11 +61,21 @@ def get_lang_member_list(target_id):
   user_similarity = cosine_similarity(piv_sparse)
   user_sim_df = pd.DataFrame(user_similarity, index = piv_norm.index, columns = piv_norm.index)
 
-  print(user_sim_df)
-
+  #date
   target = user_sim_df.loc[target_id]
   target = target.drop(target_id)
-  target = target.sort_values(ascending=False)
+  print(target)
 
+  members = read_data.get_data('members')
+  for idx, score in target.items():
+    member_id = idx
+    this_data = members[members['memberId']==member_id].iloc[0]
+    this_date = this_data['lastLoginDate']
+    diff_date = cul_date(this_date)
+    final_score = float(score) * 0.4 + (1-diff_date*0.03) * 0.6
+    target[idx] = final_score
+
+  print(target)
+  target = target.sort_values(ascending=False)
   return target.index.tolist()
 

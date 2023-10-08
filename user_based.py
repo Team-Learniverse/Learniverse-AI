@@ -39,11 +39,7 @@ def find_member_rooms(joins, target_id):
 
   return target['roomId'].tolist()
 
-def get_member_room_list() :
-  #path = os.path.dirname(os.path.abspath(__file__)) 
-  #joins = pd.read_csv(path+'/data/learniverse_member_room_test.csv', encoding='euc-kr')
-  #rooms = pd.read_csv(path+'/data/learniverse_sample_less.csv', encoding='euc-kr')
-  
+def get_member_room_list() :  
   joins = read_data.get_data('joins')
   rooms = read_data.get_data('rooms')
   join_rooms = join_list(joins, rooms)
@@ -51,3 +47,23 @@ def get_member_room_list() :
   recommend_members = member_recommend_list(join_rooms, 1)
 
   return find_member_rooms(joins, recommend_members[0])
+
+#깃허브 언어 기준으로 유사 사용자 가져오기 
+def get_lang_member_list(target_id):
+  member_git_lang = read_data.get_data('memberGitLang')
+
+  piv = member_git_lang.pivot(index="memberId", columns = 'language', values='bytes').fillna(0)
+  piv_norm = piv.apply(lambda x: (x-np.mean(x))/(np.max(x)-np.min(x)), axis = 1)
+
+  piv_sparse = sp.sparse.csr_matrix(piv_norm.values)
+  user_similarity = cosine_similarity(piv_sparse)
+  user_sim_df = pd.DataFrame(user_similarity, index = piv_norm.index, columns = piv_norm.index)
+
+  print(user_sim_df)
+
+  target = user_sim_df.loc[target_id]
+  target = target.drop(target_id)
+  target = target.sort_values(ascending=False)
+
+  return target.index.tolist()
+

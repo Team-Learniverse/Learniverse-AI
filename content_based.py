@@ -4,6 +4,16 @@ from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 import read_data
 
+#text 정렬
+def data_sort(str):
+  strings = str.split()
+  strings = sorted(strings)
+  lang_str = ""
+  for string in strings:
+    lang_str += string+" "
+  return lang_str
+
+#자카드 유사도를 위한 집합 
 def str_to_set(x):
   language_set = set()
   strings = x.split()
@@ -11,14 +21,7 @@ def str_to_set(x):
     language_set.add(string)
   return language_set
 
-def data_sort(languages):
-  strings = languages.split()
-  strings = sorted(strings)
-  lang_str = ""
-  for string in strings:
-    lang_str += string+" "
-  return lang_str
-
+#자카드 유사도 계산
 def jaccard_similarity(s1, s2):
   # 분모가 0이면 계산할 수 없기 때문에 s1s2 합집합의 크기가 0인 경우 return 0
   if len(s1|s2) == 0:
@@ -26,6 +29,7 @@ def jaccard_similarity(s1, s2):
   # 아닌 경우 교집합/합집합 반환
   return len(s1&s2)/len(s1|s2)
 
+#특정 방과 유사한 방 점 수 계산
 def recommend_list(data, target_id, top):
   target = data.loc[data['roomId'] == target_id].iloc[0]
   lang_set = target['roomLanguages']
@@ -98,6 +102,7 @@ def recommend_list(data, target_id, top):
   result = result.sort_values(by='finalScore', ascending=False)
   return result[:top]
 
+#특정 방과 유사한 방 리스트 
 def get_rec_room_list(target_row, top):
   rooms = read_data.get_data('rooms')
   rooms = rooms.fillna(" ")
@@ -115,7 +120,7 @@ def get_rec_room_list(target_row, top):
   return recommend_list(rooms, 0, top)
 
   #merged_df = pd.merge(rooms, result_df, on='roomId', how='inner')
- # return merged_df.sort_values(by='finalScore', ascending=False)
+  #return merged_df.sort_values(by='finalScore', ascending=False)
 
 
 

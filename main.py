@@ -45,5 +45,9 @@ def test_def(memberId:int):
     print(model.check_room_info(recommend_list))
     #return recommend_list
 
+@app.get("/member/lang")
+def test_member_lang(memberId:int):
+    recommend_list = user_based.get_lang_member_list(memberId)
+    print(recommend_list)
 
 

@@ -67,7 +67,8 @@ def get_member_git_lang(memberId):
     languages += lang +" "
   return languages
 
-#개발언어 리스트로 유사한 방 리스트 찾기
+#
+##개발언어 리스트로 유사한 방 리스트 찾기
 def get_rec_room_list_based_lang(memberId, top):
   rooms = read_data.get_data('rooms')
   rooms = rooms.fillna(" ")
@@ -107,47 +108,49 @@ def get_rec_room_list_based_lang(memberId, top):
   result = result.sort_values(by='finalScore', ascending=False)
   return result[:top]
 
-#히스토리 얻기
-def get_history(memberId):
-  ret = ""
-  data = read_data.get_data_find_member('searchHistory', memberId)
-  for str in data['search']:
-    ret += str +" "
-  return ret
 
-#검색 기록 기반(해시태그) 유사한 방 리스트 찾기
+#
+## 검색 기록 기반(해시태그) 유사한 방 리스트 찾기
 def get_rec_room_list_based_history(member_id, top):
   #데이터 처리 
   rooms = read_data.get_data('rooms')
   rooms = rooms.fillna(" ")
-  search_history = get_history(member_id)
-  data = pd.DataFrame({'roomId': [0], 'roomHashtags': [search_history]})
-  rooms = pd.concat([rooms, data], ignore_index=True)
+  rooms['roomHashtags'] =  rooms['roomHashtags'].apply(str_to_set)
 
-  counter_vector = CountVectorizer(ngram_range=(1,3))
-  # 코사인 - 해시태그
-  target_idx = rooms[rooms['roomId'] == 0].index[0]
-  c_vector_hash = counter_vector.fit_transform(rooms['roomHashtags'])
-  similarity_hash = cosine_similarity(c_vector_hash, c_vector_hash)
-  hash_result = list(enumerate(similarity_hash[target_idx]))
+  search_history = read_data.get_data_find_member('searchHistory', member_id)
+  search = []
+  for str in search_history ['search']:
+    search.append(str)
 
-
-  #점수 계산
-  for this_id in rooms['roomId']:
-    this_data = rooms.loc[rooms['roomId'] == this_id].iloc[0]
-
-  #결과 
   room_ids = []
   final_scores = []
-  for room_id in rooms['roomId']:
-    idx = rooms[rooms['roomId'] == room_id].index[0]
-    if(idx == target_idx): continue
-    
-    sim_hash = hash_result[idx][1]
+  for idx, history in enumerate(search):
+    hash_result = []
+    #점수 계산
+    for this_id in rooms['roomId']:
+      this_data = rooms.loc[rooms['roomId'] == this_id].iloc[ 0]
+      this_hash_set = this_data['roomHashtags']
 
-    final_score = float(sim_hash) * 0.5
-    room_ids.append(room_id)
-    final_scores.append(final_score)
+      sim_hash = jaccard_similarity(this_hash_set, str_to_set(history))
+      hash_result.append((this_id, sim_hash))
+
+
+    #결과
+    date = search_history.loc[idx]['createdDate'] 
+    diff_date = cul_date(date)
+    final_idx = 0
+    for room_id in rooms['roomId']:
+      room_idx = rooms[rooms['roomId'] == room_id].index[0]
+      
+      sim_hash = hash_result[room_idx][1]
+
+      final_score = float(sim_hash) * 0.5 + (1-diff_date*0.03) * 0.5
+      if(idx == 0):
+        room_ids.append(room_id)
+        final_scores.append(final_score * (1/len(search)))
+      else:
+        final_scores[final_idx] += final_score * (1/len(search))
+      final_idx += 1
 
 
   data = {'roomId':room_ids, 'finalScore':final_scores}

@@ -46,7 +46,7 @@ def get_rec_room_list_row(target_row):
   rooms = read_data.get_data('rooms')
   rooms = pd.concat([rooms, target_row], ignore_index=True)
   rooms = rooms.fillna(" ")
-  
+
   #집합
   rooms['roomLanguages'] = rooms['roomLanguages'].apply(str_to_set)
   rooms['roomHashtagsSet'] = rooms['roomHashtags'].apply(str_to_set)
@@ -207,7 +207,10 @@ def rec_room_list (data, target_id, target_contain):
     lang_result.append((this_id, sim_lang))
     hash_jaccard_result.append((this_id, sim_hash))
     category_result.append((this_id, sim_category))
-    date_result.append(cul_date(this_date))
+    if(this_date!=" "):
+      date_result.append(cul_date(this_date))
+    else:
+      date_result.append(0)
 
   target_idx = data[data['roomId'] == target_id].index[0]
   # 코사인 - 해시태그

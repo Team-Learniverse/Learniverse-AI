@@ -3,6 +3,17 @@ import read_data
 import content_based, user_based
 
 def learniverse_model(member_id):
+    rooms = read_data.get_data('rooms')
+    rooms = rooms.fillna(" ")
+    def_rooms = read_data.get_data('defaultRooms')
+
+    target = read_data.get_data_find_member('joins',member_id)
+    joins_default = target[target['isDefault'] == True] 
+    joins = target[target['isDefault'] == False] 
+    print("join_room")
+    print(pd.merge(rooms, joins, on='roomId', how='inner'))
+    print("dafault_room")
+    print(pd.merge(def_rooms, joins_default, on='roomId', how='inner'))
     
     result_df = pd.DataFrame(columns = ['roomId','finalScore'])
 
@@ -33,31 +44,46 @@ def learniverse_model(member_id):
     # 관심 있는 방 외의 가중치 
     entire_weight = 1 - default_weight
     lang_weight = entire_weight * 0.15
-    enter_weight = entire_weight * 0.15
+    enter_weight = entire_weight * 0.25
     join_weight = entire_weight * 0.35
-    history_weight = entire_weight * 0.35
+    history_weight = entire_weight * 0.25
 
     result_df = pd.DataFrame(columns = ['roomId','finalScore'])
     result_df = cul_finalScore(result_df, default_room_based_list, default_weight)
+    #print(result_df.sort_values(by='finalScore', ascending=False))
     result_df = cul_finalScore(result_df, git_lang_based_list, lang_weight)
+    #print(result_df.sort_values(by='finalScore', ascending=False))
     result_df = cul_finalScore(result_df, enter_based_list, enter_weight)
+    #print(result_df.sort_values(by='finalScore', ascending=False))
     result_df = cul_finalScore(result_df, join_room_based_list, join_weight)
+    #print(result_df.sort_values(by='finalScore', ascending=False))
     result_df = cul_finalScore(result_df, history_based_list, history_weight)
     
-    result_df.sort_values(by='finalScore', ascending=False)
+    result_df = result_df.sort_values(by='finalScore', ascending=False)
     rec_ids = result_df['roomId'].tolist()
 
     #가입한 방 삭제
     joins = read_data.get_data_find_member('joins', member_id)
     if(joins is not None):
-        joins_ids = joins['roomId'].tolist()
-        rec_ids = [item for item in rec_ids if item not in joins_ids]
+        joins = joins[joins['isDefault'] != True]
+        if(joins.shape[0] != 0):
+            joins_ids = joins['roomId'].tolist()
+            rec_ids = [item for item in rec_ids if item not in joins_ids]
     
     ret = rec_ids[:5]
+
+    print("-----result-----")
+    merged_df = pd.merge(rooms, result_df, on='roomId', how='inner')
+    print(merged_df.sort_values(by='finalScore', ascending=False))
     return [int(x) for x in ret]
 
 def cul_finalScore(result_df, merge_df, weight):
     if(merge_df is None): return result_df
+    
+    #print("-----before-----")
+    #print(result_df.sort_values(by='finalScore', ascending=False))
+    #print("-----merge-----")
+    #print(merge_df.sort_values(by='finalScore', ascending=False))
     for index, row in merge_df.iterrows():
         room_id = row['roomId']
         final_score = row['finalScore']
@@ -67,10 +93,11 @@ def cul_finalScore(result_df, merge_df, weight):
         if room_id in result_df['roomId'].values:
             result_df.loc[result_df['roomId'] == room_id, 'finalScore'] += final_score
         elif final_score > 0:
+            row['finalScore'] = final_score
             result_df = pd.concat([result_df, row.to_frame().T], ignore_index=True)
     
-    
-
+    #print("-----after----")
+    #print(result_df.sort_values(by='finalScore', ascending=False))
     return result_df
     
 
@@ -93,6 +120,7 @@ def enter_room_base(member_id):
                 elif final_score > 0:
                     result_df = pd.concat([result_df, row.to_frame().T], ignore_index=True)
 
+    #print(result_df.sort_values(by='finalScore', ascending=False))
     return result_df.sort_values(by='finalScore', ascending=False)
 
 #가입한 방들과 유사한 방
@@ -100,6 +128,7 @@ def join_room_base(member_id):
     joins = read_data.get_data('joins')
     joins = joins.fillna(" ")
     target = joins[joins['memberId'] == member_id]
+    target = target[target['isDefault'] != True]
     room_ids = target['roomId'].tolist()
 
     result_df = pd.DataFrame(columns = ['roomId','finalScore'])
@@ -109,7 +138,11 @@ def join_room_base(member_id):
         #date 정보 
         this_data = target[target['roomId'] == room_id].iloc[0]
         diff_create_date = content_based.cul_date((this_data['createdDate']))
-        pin_date = this_data['pinDate']
+        
+        if this_data.name == 'pinDate':
+            pin_date = this_data['pinDate']
+        else:
+            pin_date = " "
         if pin_date == " " :
             diff_pin_date = 30
         else: diff_pin_date = min(content_based.cul_date(pin_date), 30)
@@ -123,6 +156,7 @@ def join_room_base(member_id):
             if room_id in result_df['roomId'].values:
                 result_df.loc[result_df['roomId'] == room_id, 'finalScore'] += final_score
             elif final_score > 0:
+                row['finalScore'] = final_score
                 result_df = pd.concat([result_df, row.to_frame().T], ignore_index=True)
    
     return result_df.sort_values(by='finalScore', ascending=False)

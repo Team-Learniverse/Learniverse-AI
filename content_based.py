@@ -139,15 +139,18 @@ def get_rec_room_list_based_history(member_id):
 
   room_ids = []
   final_scores = []
+  date_result = []
+  hash_result = []
   for idx, history in enumerate(search):
-    hash_result = []
     #점수 계산
     for this_id in rooms['roomId']:
       this_data = rooms.loc[rooms['roomId'] == this_id].iloc[ 0]
       this_hash_set = this_data['roomHashtags']
+      this_date = this_data['createdDate']
 
       sim_hash = jaccard_similarity(this_hash_set, str_to_set(history))
       hash_result.append((this_id, sim_hash))
+      date_result.append(cul_date(this_date))
 
 
     #결과
@@ -158,8 +161,11 @@ def get_rec_room_list_based_history(member_id):
       room_idx = rooms[rooms['roomId'] == room_id].index[0]
       
       sim_hash = hash_result[room_idx][1]
+      diff_date = date_result[idx]
 
-      final_score = float(sim_hash) * 0.5 + (1-diff_date*0.03) * 0.5
+      final_score = float(sim_hash) * 0.5
+      if(final_score != 0):
+        final_score += (1-diff_date*0.03) * 0.5
       if(idx == 0):
         room_ids.append(room_id)
         final_scores.append(final_score * (1/len(search)))
@@ -186,12 +192,13 @@ def rec_room_list (data, target_id, target_contain):
   category_result = []
   name_result = []
   intro_result = []
-
+  date_result = []
   # 자카드 - 개발언어, 해시태그 / 카테고리
   for this_id in data['roomId']:
     this_data = data.loc[data['roomId'] == this_id].iloc[ 0]
     this_lang_set = this_data['roomLanguages']
     this_hash_set = this_data['roomHashtagsSet']
+    this_date = this_data['createdDate']
 
     sim_lang = jaccard_similarity(this_lang_set, lang_set)
     sim_hash = jaccard_similarity(this_hash_set, hash_set)
@@ -200,6 +207,7 @@ def rec_room_list (data, target_id, target_contain):
     lang_result.append((this_id, sim_lang))
     hash_jaccard_result.append((this_id, sim_hash))
     category_result.append((this_id, sim_category))
+    date_result.append(cul_date(this_date))
 
   target_idx = data[data['roomId'] == target_id].index[0]
   # 코사인 - 해시태그
@@ -226,6 +234,7 @@ def rec_room_list (data, target_id, target_contain):
     sim_lang = lang_result[idx][1]
     sim_jaccard_hash = hash_jaccard_result[idx][1]
     sim_category = category_result[idx][1]
+    diff_date = date_result[idx]
 
     sim_hash = hash_result[idx][1]
     sim_name = name_result[idx][1]
@@ -235,7 +244,8 @@ def rec_room_list (data, target_id, target_contain):
 
     # 가중 평균을 계산하고 최종 결과 리스트에 추가
     final_score = 0.4 * float(sim_lang) + 0.1 * float(sim_name) + 0.05 * float(sim_intro)
-    final_score +=  0.15 * float(sim_hash) + 0.15 * float(sim_jaccard_hash)
+    final_score +=  0.1 * float(sim_hash) + 0.1 * float(sim_jaccard_hash)
+    final_score +=  (1-diff_date*0.03) * 0.1
     if(sim_category):
       final_score+=0.2
 

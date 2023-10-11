@@ -37,12 +37,17 @@ def member_recommend_list(join_rooms, target_id):
 # enterRoom 기준에 따른 유사도
 def member_rec_list_based_enter(member_id):
   check = read_data.get_data_find_member('joins', member_id)
-  if(check == None): return None 
+  if(check is None): return None 
+  check = check[check['isDefault'] != True]
+  if(check.shape[0] == 0): return None
 
   joins = read_data.get_data('joins')
+  joins = joins = joins[joins['isDefault'] == False]
+  #관심있는 방 제거 
   joins.drop('isDefault', axis = 1, inplace = True)
   joins.drop('createdDate', axis = 1, inplace = True)
-  joins.drop('pinDate', axis = 1, inplace = True)
+  if 'pinDate' in joins.columns:
+    joins.drop('pinDate', axis = 1, inplace = True)
   
   piv = joins.pivot(index='memberId', columns = 'roomId', values='enterRoom').fillna(-1.0)
   piv_norm = piv.apply(lambda x: (x-np.mean(x))/(np.max(x)-np.min(x)), axis = 1)

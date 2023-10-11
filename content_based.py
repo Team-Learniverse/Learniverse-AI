@@ -130,6 +130,8 @@ def get_rec_room_list_based_history(member_id):
   #데이터 처리 
   rooms = read_data.get_data('rooms')
   rooms = rooms.fillna(" ")
+
+  #set 집합으로 바꾸는야
   rooms['roomHashtags'] =  rooms['roomHashtags'].apply(str_to_set)
 
   search_history = read_data.get_data_find_member('searchHistory', member_id)

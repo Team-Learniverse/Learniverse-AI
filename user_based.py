@@ -52,6 +52,7 @@ def member_rec_list_based_enter(member_id):
   piv = joins.pivot(index='memberId', columns = 'roomId', values='enterRoom').fillna(-1.0)
   piv_norm = piv.apply(lambda x: (x-np.mean(x))/(np.max(x)-np.min(x)), axis = 1)
   piv_sparse = sp.sparse.csr_matrix(piv_norm.values)
+  
   user_similarity = cosine_similarity(piv_sparse)
   user_sim_df = pd.DataFrame(user_similarity, index = piv_norm.index, columns = piv_norm.index)
 

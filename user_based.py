@@ -7,7 +7,7 @@ import read_data
 from content_based import cul_date
 
 def join_list (joins, rooms) :
-  rooms.drop('roomIntro', axis = 1, inplace = True)
+  rooms.drop('roomIntro')
   rooms.drop('roomHashtags', axis = 1, inplace = True)
   rooms.drop('roomCategory', axis = 1, inplace = True)
   rooms.drop('roomLanguages', axis = 1, inplace = True)
@@ -19,7 +19,7 @@ def join_list (joins, rooms) :
 
   return join_rooms
 
-
+# 참여한 방 가입 여부에 따른 유사도 
 def member_recommend_list(join_rooms, target_id):
   piv = join_rooms.pivot(index='memberId', columns = 'roomId', values='isJoin').fillna(0.0)
   piv_norm = piv.apply(lambda x: (x-np.mean(x))/(np.max(x)-np.min(x)), axis = 1)
@@ -34,7 +34,30 @@ def member_recommend_list(join_rooms, target_id):
 
   return target.index.tolist()
 
-def find_member_rooms(joins, target_id):
+# enterRoom 기준에 따른 유사도
+def member_rec_list_based_enter(member_id):
+  check = read_data.get_data_find_member('joins', member_id)
+  if(check == None): return None 
+
+  joins = read_data.get_data('joins')
+  joins.drop('isDefault', axis = 1, inplace = True)
+  joins.drop('createdDate', axis = 1, inplace = True)
+  joins.drop('pinDate', axis = 1, inplace = True)
+  
+  piv = joins.pivot(index='memberId', columns = 'roomId', values='enterRoom').fillna(-1.0)
+  piv_norm = piv.apply(lambda x: (x-np.mean(x))/(np.max(x)-np.min(x)), axis = 1)
+  piv_sparse = sp.sparse.csr_matrix(piv_norm.values)
+  user_similarity = cosine_similarity(piv_sparse)
+  user_sim_df = pd.DataFrame(user_similarity, index = piv_norm.index, columns = piv_norm.index)
+
+  target = user_sim_df.loc[member_id]
+  target = target.drop(member_id)
+  target = target.sort_values(ascending=False)
+
+  return target.index.tolist()
+
+def find_member_rooms(target_id):
+  joins = read_data.get_data('joins')
   target = joins[joins['memberId'] == target_id]
 
   return target['roomId'].tolist()
@@ -48,10 +71,10 @@ def get_member_room_list() :
 
   return find_member_rooms(joins, recommend_members[0])
 
-
-
 #깃허브 언어 기준으로 유사 사용자 가져오기 
 def get_lang_member_list(target_id):
+  check_git_lang = read_data.get_data_find_member('memberGitLang', target_id)
+  if(check_git_lang is None): return None 
   member_git_lang = read_data.get_data('memberGitLang')
 
   piv = member_git_lang.pivot(index="memberId", columns = 'language', values='bytes').fillna(0)
@@ -64,7 +87,7 @@ def get_lang_member_list(target_id):
   #date
   target = user_sim_df.loc[target_id]
   target = target.drop(target_id)
-  print(target)
+  #print(target) : date 적용 전후 비교를 위한 print 문
 
   members = read_data.get_data('members')
   for idx, score in target.items():
@@ -75,7 +98,7 @@ def get_lang_member_list(target_id):
     final_score = float(score) * 0.4 + (1-diff_date*0.03) * 0.6
     target[idx] = final_score
 
-  print(target)
+  #print(target)
   target = target.sort_values(ascending=False)
   return target.index.tolist()
 

@@ -5,6 +5,8 @@ from sklearn.metrics.pairwise import cosine_similarity
 import read_data
 from datetime import datetime
 
+top =  30
+
 #text 정렬
 def data_sort(str):
   strings = str.split()
@@ -23,12 +25,12 @@ def str_to_set(x):
   return language_set
 
 #날짜 차이 계산
-def cul_date(str_datetime):
-  date = str_datetime.split()
-  date_format = "%Y-%m-%d" 
-  comp_date = datetime.strptime(date[0], date_format)
+def cul_date(datetime):
+  #date = str_datetime.split()
+  #date_format = "%Y-%m-%d" 
+  #comp_date = datetime.strptime(date[0], date_format)
   current_date = datetime.now()
-  date_difference = current_date - comp_date
+  date_difference = current_date - datetime
   return date_difference.days
 
 #자카드 유사도 계산
@@ -39,8 +41,8 @@ def jaccard_similarity(s1, s2):
   # 아닌 경우 교집합/합집합 반환
   return len(s1&s2)/len(s1|s2)
 
-#특정 방과 유사한 방 리스트 
-def get_rec_room_list(target_row, top):
+#특정 방 정보(행 전달)와 유사한 방 리스트 : 언어, 해시태그 만 
+def get_rec_room_list_row(target_row):
   rooms = read_data.get_data('rooms')
   rooms = rooms.fillna(" ")
   rooms = pd.concat([rooms, target_row], ignore_index=True)
@@ -52,12 +54,24 @@ def get_rec_room_list(target_row, top):
   #정렬 
   rooms["roomHashtags"] = rooms.apply(lambda x: data_sort(x["roomHashtags"]), axis=1)
 
-  #result = recommend_list(rooms, 0, top)
-  #result_df = pd.DataFrame(result, columns = ['roomId','finalScore'])
-  return recommend_list(rooms, 0, top)
+  return rec_room_list(rooms, 0, False)
 
   #merged_df = pd.merge(rooms, result_df, on='roomId', how='inner')
   #return merged_df.sort_values(by='finalScore', ascending=False)
+
+#특정 방 정보(id 전달)와 유사한 방 리스트 : 언어, 해시태그 만 
+def get_rec_room_list_id(room_id, target_contain): # id, 해당 room_id 결과에 포함할건지
+  rooms = read_data.get_data('rooms')
+  rooms = rooms.fillna(" ")
+
+  #집합
+  rooms['roomLanguages'] = rooms['roomLanguages'].apply(str_to_set)
+  rooms['roomHashtagsSet'] = rooms['roomHashtags'].apply(str_to_set)
+
+  #정렬 
+  rooms["roomHashtags"] = rooms.apply(lambda x: data_sort(x["roomHashtags"]), axis=1)
+
+  return rec_room_list(rooms, room_id, target_contain)
 
 #사용자 개발 언어 가져오기 
 def get_member_git_lang(memberId):
@@ -69,7 +83,7 @@ def get_member_git_lang(memberId):
 
 #
 ##개발언어 리스트로 유사한 방 리스트 찾기
-def get_rec_room_list_based_lang(memberId, top):
+def get_rec_room_list_based_lang(memberId):
   rooms = read_data.get_data('rooms')
   rooms = rooms.fillna(" ")
 
@@ -111,13 +125,14 @@ def get_rec_room_list_based_lang(memberId, top):
 
 #
 ## 검색 기록 기반(해시태그) 유사한 방 리스트 찾기
-def get_rec_room_list_based_history(member_id, top):
+def get_rec_room_list_based_history(member_id):
   #데이터 처리 
   rooms = read_data.get_data('rooms')
   rooms = rooms.fillna(" ")
   rooms['roomHashtags'] =  rooms['roomHashtags'].apply(str_to_set)
 
   search_history = read_data.get_data_find_member('searchHistory', member_id)
+  if(search_history is None): return None
   search = []
   for str in search_history ['search']:
     search.append(str)
@@ -158,9 +173,9 @@ def get_rec_room_list_based_history(member_id, top):
   result = result.sort_values(by='finalScore', ascending=False)
   return result[:top]
   
-
-#특정 방과 유사한 방 점 수 계산
-def recommend_list(data, target_id, top):
+#
+##특정 방 id로 유사한 방 점 수 계산
+def rec_room_list (data, target_id, target_contain):
   target = data.loc[data['roomId'] == target_id].iloc[0]
   lang_set = target['roomLanguages']
   hash_set = target['roomHashtagsSet']
@@ -205,7 +220,7 @@ def recommend_list(data, target_id, top):
   final_scores = []
   #결과 합산
   for room_id in data['roomId']:
-    if room_id==target_id : continue
+    if not target_contain and (room_id==target_id) : continue
     idx = data[data['roomId'] == room_id].index[0]
     
     sim_lang = lang_result[idx][1]

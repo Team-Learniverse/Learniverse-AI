@@ -41,7 +41,24 @@ def test_member_lang(memberId:int):
     recommend_list = content_based.get_rec_room_list_based_lang(memberId, 30)
     print(recommend_list)
 
+@router.get("/lang")
+def test_lang(member_id:int):
+    print(model.git_lang_based(member_id))
+
 @router.get("/history")
 def test_history(memberId:int):
     recommend_list = content_based.get_rec_room_list_based_history(memberId, 30)
     print(recommend_list)
+
+@router.get("/join")
+def test_join(member_id:int):
+    print(model.join_room_base(member_id))
+
+@router.get("/member/enter")
+def test_enter(member_id:int):
+    print(user_based.member_rec_list_based_enter(member_id))
+
+@router.get("/room/enter")
+def test_enter(member_id:int):
+    print(model.enter_room_base(member_id))
+

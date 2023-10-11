@@ -25,12 +25,12 @@ def str_to_set(x):
   return language_set
 
 #날짜 차이 계산
-def cul_date(datetime):
+def cul_date(date):
   #date = str_datetime.split()
   #date_format = "%Y-%m-%d" 
   #comp_date = datetime.strptime(date[0], date_format)
   current_date = datetime.now()
-  date_difference = current_date - datetime
+  date_difference = current_date - date
   return date_difference.days
 
 #자카드 유사도 계산

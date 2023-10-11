@@ -19,6 +19,7 @@ def data_sort(str):
 #자카드 유사도를 위한 집합 
 def str_to_set(x):
   language_set = set()
+  print(strings)
   strings = x.split()
   for string in strings:
     language_set.add(string)

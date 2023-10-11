@@ -19,7 +19,6 @@ def data_sort(str):
 #자카드 유사도를 위한 집합 
 def str_to_set(x):
   language_set = set()
-  print(x)
   strings = x.split()
   for string in strings:
     language_set.add(string)
@@ -45,9 +44,9 @@ def jaccard_similarity(s1, s2):
 #특정 방 정보(행 전달)와 유사한 방 리스트 : 언어, 해시태그 만 
 def get_rec_room_list_row(target_row):
   rooms = read_data.get_data('rooms')
-  rooms = rooms.fillna(" ")
   rooms = pd.concat([rooms, target_row], ignore_index=True)
-
+  rooms = rooms.fillna(" ")
+  
   #집합
   rooms['roomLanguages'] = rooms['roomLanguages'].apply(str_to_set)
   rooms['roomHashtagsSet'] = rooms['roomHashtags'].apply(str_to_set)

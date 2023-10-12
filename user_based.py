@@ -65,17 +65,10 @@ def member_rec_list_based_enter(member_id):
 def find_member_rooms(target_id):
   joins = read_data.get_data('joins')
   target = joins[joins['memberId'] == target_id]
+  target[target['isDefault'] == False] 
 
   return target['roomId'].tolist()
 
-def get_member_room_list() :  
-  joins = read_data.get_data('joins')
-  rooms = read_data.get_data('rooms')
-  join_rooms = join_list(joins, rooms)
-
-  recommend_members = member_recommend_list(join_rooms, 1)
-
-  return find_member_rooms(joins, recommend_members[0])
 
 #깃허브 언어 기준으로 유사 사용자 가져오기 
 def get_lang_member_list(target_id):

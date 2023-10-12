@@ -111,7 +111,6 @@ def enter_room_base(member_id):
     for like_member_id in like_member_list:
         room_ids = user_based.find_member_rooms(like_member_id)
         for room_id in room_ids:
-            print(room_id)
             temp_df = content_based.get_rec_room_list_id(room_id, True)
             for index, row in temp_df.iterrows():
                 room_id = row['roomId']

@@ -65,7 +65,7 @@ def member_rec_list_based_enter(member_id):
 def find_member_rooms(target_id):
   joins = read_data.get_data('joins')
   target = joins[joins['memberId'] == target_id]
-  target[target['isDefault'] == False] 
+  target = target[target['isDefault'] == False] 
 
   return target['roomId'].tolist()
 

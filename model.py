@@ -103,7 +103,9 @@ def cul_finalScore(result_df, merge_df, weight):
 
 #방 접속한 횟수에 따른 사용자 + 사용자 정보와 유사한 방
 def enter_room_base(member_id):
-    like_member_list = user_based.member_rec_list_based_enter(member_id)
+    like_member = user_based.member_rec_list_based_enter(member_id)
+    if(like_member is None): return None
+    like_member_list = like_member.index.tolist()
     result_df = pd.DataFrame(columns = ['roomId','finalScore'])
     # 비슷한 사용자 3명 -> 서비스 확대시 5명으로 수정
     if(like_member_list is None): return None
@@ -114,7 +116,8 @@ def enter_room_base(member_id):
             temp_df = content_based.get_rec_room_list_id(room_id, True)
             for index, row in temp_df.iterrows():
                 room_id = row['roomId']
-                final_score = row['finalScore']
+                #final_score에 사용자 유사도 곱하기 
+                final_score = row['finalScore'] * like_member[like_member_id]
                 if room_id in result_df['roomId'].values:
                     result_df.loc[result_df['roomId'] == room_id, 'finalScore'] += final_score
                 elif final_score > 0:
@@ -198,8 +201,9 @@ def default_room_based(member_id):
 
 # 깃허브 언어기반 리스트 받아오기 
 def git_lang_based(member_id):
-    like_member_list = user_based.get_lang_member_list(member_id)
-    if(like_member_list is None): return None
+    like_member = user_based.get_lang_member_list(member_id)
+    if(like_member is None): return None
+    like_member_list = like_member.index.tolist()
 
     result_df = pd.DataFrame(columns = ['roomId','finalScore'])
     # 비슷한 사용자 3명 -> 서비스 확대시 5명으로 수정
@@ -210,7 +214,8 @@ def git_lang_based(member_id):
             temp_df = content_based.get_rec_room_list_id(room_id, True)
             for index, row in temp_df.iterrows():
                 room_id = row['roomId']
-                final_score = row['finalScore']
+                #사용자 유사도 기반 
+                final_score = row['finalScore'] * like_member[like_member_id]
                 if room_id in result_df['roomId'].values:
                     result_df.loc[result_df['roomId'] == room_id, 'finalScore'] += final_score
                 elif final_score > 0:

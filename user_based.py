@@ -64,7 +64,8 @@ def member_rec_list_based_enter(member_id):
   #print(target)
   target = target.sort_values(ascending=False)
 
-  return target.index.tolist()
+  #return target.index.tolist()
+  return target
 
 def find_member_rooms(target_id):
   joins = read_data.get_data('joins')
@@ -106,5 +107,6 @@ def get_lang_member_list(target_id):
 
   #print(target)
   target = target.sort_values(ascending=False)
-  return target.index.tolist()
+  #return target.index.tolist()
+  return target
 

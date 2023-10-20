@@ -38,7 +38,7 @@ def test_member_lang(memberId:int):
 
 @router.get("/room/lang")
 def test_member_lang(memberId:int):
-    recommend_list = content_based.get_rec_room_list_based_lang(memberId, 30)
+    recommend_list = content_based.get_rec_room_list_based_lang(memberId)
     print(recommend_list)
 
 @router.get("/lang")

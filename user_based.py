@@ -58,6 +58,10 @@ def member_rec_list_based_enter(member_id):
 
   target = user_sim_df.loc[member_id]
   target = target.drop(member_id)
+  #print(target)
+  # 0보다 작은 값 제외 
+  target = target[target > 0]
+  #print(target)
   target = target.sort_values(ascending=False)
 
   return target.index.tolist()
@@ -87,7 +91,10 @@ def get_lang_member_list(target_id):
   target = user_sim_df.loc[target_id]
   target = target.drop(target_id)
   #print(target) : date 적용 전후 비교를 위한 print 문
+  # 0보다 작은 값 제외 
+  target = target[target > 0]
 
+  #유사한 멤버 list 반복문 둘면서 유사한 방 check 
   members = read_data.get_data('members')
   for idx, score in target.items():
     member_id = idx

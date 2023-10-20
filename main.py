@@ -9,7 +9,7 @@ from model import learniverse_model
 app = FastAPI()
 app.include_router(test.router)
 
-#CORS
+#CORS - Nginx에서 처리
 # app.add_middleware(
 #     CORSMiddleware,
 #     allow_origins=["*"],

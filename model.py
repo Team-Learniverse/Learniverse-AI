@@ -120,7 +120,14 @@ def enter_room_base(member_id):
                 elif final_score > 0:
                     result_df = pd.concat([result_df, row.to_frame().T], ignore_index=True)
 
-    #print(result_df.sort_values(by='finalScore', ascending=False))
+    #결과 확인 
+    # print(result_df.sort_values(by='finalScore', ascending=False))
+   
+    # 0보다 작은 값 제외 
+    result_df = result_df[result_df['finalScore'] > 0]
+
+    #결과 확인 
+    # print(result_df.sort_values(by='finalScore', ascending=False))
     return result_df.sort_values(by='finalScore', ascending=False)
 
 #가입한 방들과 유사한 방
@@ -159,6 +166,8 @@ def join_room_base(member_id):
                 row['finalScore'] = final_score
                 result_df = pd.concat([result_df, row.to_frame().T], ignore_index=True)
    
+    # 0보다 작은 값 제외 
+    result_df = result_df[result_df['finalScore'] > 0]
     return result_df.sort_values(by='finalScore', ascending=False)
 
 
@@ -183,6 +192,8 @@ def default_room_based(member_id):
             elif final_score > 0:
                 result_df = pd.concat([result_df, row.to_frame().T], ignore_index=True)
     
+    # 0보다 작은 값 제외 
+    result_df = result_df[result_df['finalScore'] > 0]
     return result_df.sort_values(by='finalScore', ascending=False)
 
 # 깃허브 언어기반 리스트 받아오기 
@@ -218,6 +229,8 @@ def git_lang_based(member_id):
         elif final_score > 0:
             result_df = pd.concat([result_df, row.to_frame().T], ignore_index=True)
     
+    # 0보다 작은 값 제외 
+    result_df = result_df[result_df['finalScore'] > 0]
     return result_df.sort_values(by='finalScore', ascending=False)
 
 

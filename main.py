@@ -25,6 +25,6 @@ def root():
 @app.get("/recommendRoom")
 def main_rec(memberId : int):
     room_id_list = learniverse_model(memberId)
-    return {"status":200, "success": "OK", "data":room_id_list}
+    return {"status":200, "success": "OK", "data":room_id_list[:5]}
 
 

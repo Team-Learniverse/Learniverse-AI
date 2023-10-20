@@ -1,5 +1,6 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Query
 import user_based, content_based, read_data, model
+from typing import List
 
 router = APIRouter(
 	prefix="/test",
@@ -62,3 +63,15 @@ def test_enter(member_id:int):
 def test_enter(member_id:int):
     print(model.enter_room_base(member_id))
 
+@router.get("/pre/recall")
+def test_pre_recall(k:int, member_id:int, targets : List[int] = Query(None)):
+    predictions = model.learniverse_model(member_id)
+    return _compute_precision_recall(targets, predictions, k)
+
+def _compute_precision_recall(targets, predictions, k):
+    pred = predictions[:k]
+    num_hit = len(set(pred).intersection(set(targets)))
+    precision = float(num_hit) / len(pred)
+    recall = float(num_hit) / len(targets)
+    print("Precison@5 : ", precision, "Recall@5 : ", recall)
+    return precision, recall

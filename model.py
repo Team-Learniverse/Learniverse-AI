@@ -11,9 +11,9 @@ def learniverse_model(member_id):
     joins_default = target[target['isDefault'] == True] 
     joins = target[target['isDefault'] == False] 
     print("join_room")
-    print(pd.merge(rooms, joins, on='roomId', how='inner'))
+    print(pd.merge(rooms, joins, on='roomId', how='inner').to_string(index=False))
     print("dafault_room")
-    print(pd.merge(def_rooms, joins_default, on='roomId', how='inner'))
+    print(pd.merge(def_rooms, joins_default, on='roomId', how='inner').to_string(index=False))
     
     result_df = pd.DataFrame(columns = ['roomId','finalScore'])
 
@@ -81,12 +81,16 @@ def learniverse_model(member_id):
             joins_ids = joins['roomId'].tolist()
             rec_ids = [item for item in rec_ids if item not in joins_ids]
     
-    ret = rec_ids[:5]
+    #ret = rec_ids[:5]
 
     print("-----result-----")
-    merged_df = pd.merge(rooms, result_df, on='roomId', how='inner')
-    print(merged_df.sort_values(by='finalScore', ascending=False))
-    return [int(x) for x in ret]
+    rooms['order'] = rooms['roomId'].apply(lambda x: rec_ids.index(x) if x in rec_ids else len(rec_ids))
+    rooms = rooms.sort_values(by=['order'])
+    rooms = rooms.drop(columns=['order'])
+    print(rooms.to_string(index=False))
+    #merged_df = pd.merge(rooms, result_df, on='roomId', how='inner')
+    #print(merged_df.sort_values(by='finalScore', ascending=False))
+    return [int(x) for x in rec_ids]
 
 def cul_finalScore(result_df, merge_df, weight):
     if(merge_df is None): return result_df

@@ -206,7 +206,7 @@ def default_room_based(member_id):
         temp_df = content_based.get_rec_room_list_row(target_row.to_frame().T)
         for index, row in temp_df.iterrows():
             room_id = row['roomId']
-            final_score = row['finalScore']
+            final_score = row['finalScore'] / len(default_roomIds)
             if room_id in result_df['roomId'].values:
                 result_df.loc[result_df['roomId'] == room_id, 'finalScore'] += final_score
             else :

@@ -31,7 +31,7 @@ def get_data_find_member(coll_name, memberId):
 def cnt_member_join_room(member_id):
     collection = db['joins']
 
-    query = {"memberId": member_id} 
+    query = {"memberId": member_id, "isDefault": False} 
     return collection.count_documents(query)
 
 

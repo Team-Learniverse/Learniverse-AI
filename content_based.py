@@ -113,7 +113,6 @@ def get_rec_room_list_based_lang(memberId):
     
     sim_lang = lang_result[idx][1]
     diff_date = date_result[idx]
-
     final_score = float(sim_lang) * 0.5 + (1-diff_date*0.03) * 0.5
     room_ids.append(room_id)
     final_scores.append(final_score)
@@ -241,7 +240,6 @@ def rec_room_list (data, target_id, target_contain):
     sim_jaccard_hash = hash_jaccard_result[idx][1]
     sim_category = category_result[idx][1]
     diff_date = date_result[idx]
-
     sim_hash = hash_result[idx][1]
     sim_name = name_result[idx][1]
     sim_intro = intro_result[idx][1]
@@ -249,11 +247,12 @@ def rec_room_list (data, target_id, target_contain):
     #print(room_id, idx, sim_hash," ",sim_name," ",sim_intro)
 
     # 가중 평균을 계산하고 최종 결과 리스트에 추가
-    final_score = 0.4 * float(sim_lang) + 0.1 * float(sim_name) + 0.05 * float(sim_intro)
+    final_score = 0.2 * float(sim_lang) + 0.1 * float(sim_name) + 0.05 * float(sim_intro)
     final_score +=  0.1 * float(sim_hash) + 0.1 * float(sim_jaccard_hash)
-    final_score +=  (1-diff_date*0.03) * 0.1
     if(sim_category):
-      final_score+=0.2
+      final_score+=0.15
+
+    final_score += (1-diff_date*0.03) * 0.3
 
     room_ids.append(room_id)
     final_scores.append(final_score)

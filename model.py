@@ -34,13 +34,20 @@ def learniverse_model(member_id):
     #
     ##결과 합치기 
     # 관심 있는 방 가중치 : 사용자 방 가입 정보 없으면 80 이후에는 createdDate에 따라 떨어지기
-    if(read_data.cnt_member_join_room(member_id) == 0):
+    join_cnt = read_data.cnt_member_join_room(member_id)
+    if(join_cnt == 0):
         default_weight = 0.8
     else: 
         member_data = read_data.get_data_find_member('members', member_id).iloc[0]
         diff_date = content_based.cul_date(member_data['createdDate'])
         default_weight = 0.8 - (0.003*diff_date)
+        # join room 에 따른 가중치 떨어지기
+        default_weight -= 0.1 * join_cnt
+
+    
     if(default_weight < 0): default_weight = 0
+
+
     # 관심 있는 방 외의 가중치 
     entire_weight = 1 - default_weight
     lang_weight = entire_weight * 0.15
@@ -50,12 +57,16 @@ def learniverse_model(member_id):
 
     result_df = pd.DataFrame(columns = ['roomId','finalScore'])
     result_df = cul_finalScore(result_df, default_room_based_list, default_weight)
+    #print("--------------------------default--------------------------")
     #print(result_df.sort_values(by='finalScore', ascending=False))
     result_df = cul_finalScore(result_df, git_lang_based_list, lang_weight)
+    #print("--------------------------lang--------------------------")
     #print(result_df.sort_values(by='finalScore', ascending=False))
     result_df = cul_finalScore(result_df, enter_based_list, enter_weight)
+    #print("--------------------------enter--------------------------")
     #print(result_df.sort_values(by='finalScore', ascending=False))
     result_df = cul_finalScore(result_df, join_room_based_list, join_weight)
+    #print("--------------------------join_room--------------------------")
     #print(result_df.sort_values(by='finalScore', ascending=False))
     result_df = cul_finalScore(result_df, history_based_list, history_weight)
     
@@ -92,7 +103,7 @@ def cul_finalScore(result_df, merge_df, weight):
         final_score = final_score * weight
         if room_id in result_df['roomId'].values:
             result_df.loc[result_df['roomId'] == room_id, 'finalScore'] += final_score
-        elif final_score > 0:
+        else :
             row['finalScore'] = final_score
             result_df = pd.concat([result_df, row.to_frame().T], ignore_index=True)
     
@@ -118,16 +129,17 @@ def enter_room_base(member_id):
                 room_id = row['roomId']
                 #final_score에 사용자 유사도 곱하기 
                 final_score = row['finalScore'] * like_member[like_member_id]
+                final_score /= len(like_member_list)
                 if room_id in result_df['roomId'].values:
                     result_df.loc[result_df['roomId'] == room_id, 'finalScore'] += final_score
-                elif final_score > 0:
+                else :
                     result_df = pd.concat([result_df, row.to_frame().T], ignore_index=True)
 
     #결과 확인 
     # print(result_df.sort_values(by='finalScore', ascending=False))
    
     # 0보다 작은 값 제외 
-    result_df = result_df[result_df['finalScore'] > 0]
+    #result_df = result_df[result_df['finalScore'] > 0]
 
     #결과 확인 
     # print(result_df.sort_values(by='finalScore', ascending=False))
@@ -153,9 +165,10 @@ def join_room_base(member_id):
             pin_date = this_data['pinDate']
         else:
             pin_date = " "
-        if pin_date == " " :
+
+        if pin_date == " " : # pin 이 없는 경우 -> 30으로 해야 0
             diff_pin_date = 30
-        else: diff_pin_date = min(content_based.cul_date(pin_date), 30)
+        else: diff_pin_date = min(content_based.cul_date(pin_date), 30) # 최소 30이어야  0 
 
         for index, row in temp_df.iterrows():
             room_id = row['roomId']
@@ -165,12 +178,12 @@ def join_room_base(member_id):
             final_score = final_score/len(room_ids)
             if room_id in result_df['roomId'].values:
                 result_df.loc[result_df['roomId'] == room_id, 'finalScore'] += final_score
-            elif final_score > 0:
+            else:
                 row['finalScore'] = final_score
                 result_df = pd.concat([result_df, row.to_frame().T], ignore_index=True)
    
     # 0보다 작은 값 제외 
-    result_df = result_df[result_df['finalScore'] > 0]
+    #result_df = result_df[result_df['finalScore'] > 0]
     return result_df.sort_values(by='finalScore', ascending=False)
 
 
@@ -192,11 +205,11 @@ def default_room_based(member_id):
             final_score = row['finalScore']
             if room_id in result_df['roomId'].values:
                 result_df.loc[result_df['roomId'] == room_id, 'finalScore'] += final_score
-            elif final_score > 0:
+            else :
                 result_df = pd.concat([result_df, row.to_frame().T], ignore_index=True)
     
     # 0보다 작은 값 제외 
-    result_df = result_df[result_df['finalScore'] > 0]
+    #result_df = result_df[result_df['finalScore'] > 0]
     return result_df.sort_values(by='finalScore', ascending=False)
 
 # 깃허브 언어기반 리스트 받아오기 
@@ -216,9 +229,10 @@ def git_lang_based(member_id):
                 room_id = row['roomId']
                 #사용자 유사도 기반 
                 final_score = row['finalScore'] * like_member[like_member_id]
+                final_score /= len(like_member_list)
                 if room_id in result_df['roomId'].values:
                     result_df.loc[result_df['roomId'] == room_id, 'finalScore'] += final_score
-                elif final_score > 0:
+                else:
                     result_df = pd.concat([result_df, row.to_frame().T], ignore_index=True)
 
     # 사용자 기반 : 0.5
@@ -231,11 +245,11 @@ def git_lang_based(member_id):
         final_score = row['finalScore'] * 0.5 # 콘텐츠 기반 0.5
         if room_id in result_df['roomId'].values:
             result_df.loc[result_df['roomId'] == room_id, 'finalScore'] += final_score
-        elif final_score > 0:
+        else :
             result_df = pd.concat([result_df, row.to_frame().T], ignore_index=True)
     
     # 0보다 작은 값 제외 
-    result_df = result_df[result_df['finalScore'] > 0]
+    #result_df = result_df[result_df['finalScore'] > 0]
     return result_df.sort_values(by='finalScore', ascending=False)
 
 

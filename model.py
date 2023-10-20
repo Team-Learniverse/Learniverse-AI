@@ -44,8 +44,8 @@ def learniverse_model(member_id):
     # 관심 있는 방 외의 가중치 
     entire_weight = 1 - default_weight
     lang_weight = entire_weight * 0.15
-    enter_weight = entire_weight * 0.25
-    join_weight = entire_weight * 0.35
+    enter_weight = entire_weight * 0.10
+    join_weight = entire_weight * 0.50
     history_weight = entire_weight * 0.25
 
     result_df = pd.DataFrame(columns = ['roomId','finalScore'])

@@ -163,7 +163,7 @@ def join_room_base(member_id):
         
         #date 정보 
         this_data = target[target['roomId'] == room_id].iloc[0]
-        diff_create_date = content_based.cul_date((this_data['createdDate']))
+        #diff_create_date = content_based.cul_date((this_data['createdDate']))
         
         if this_data.name == 'pinDate':
             pin_date = this_data['pinDate']
@@ -178,7 +178,7 @@ def join_room_base(member_id):
             room_id = row['roomId']
             final_score = row['finalScore']
             #스터디룸 가입한 date 처리
-            final_score = final_score * 0.5 +(1-diff_create_date*0.03) * 0.35+(1-diff_pin_date*0.03) * 0.15
+            final_score = final_score * 0.75+(1-diff_pin_date*0.03) * 0.15
             final_score = final_score/len(room_ids)
             if room_id in result_df['roomId'].values:
                 result_df.loc[result_df['roomId'] == room_id, 'finalScore'] += final_score

@@ -42,7 +42,7 @@ def learniverse_model(member_id):
         diff_date = content_based.cul_date(member_data['createdDate'])
         default_weight = 0.8 - (0.003*diff_date)
         # join room 에 따른 가중치 떨어지기
-        default_weight -= 0.1 * join_cnt
+        default_weight -= 0.3 * join_cnt
 
     
     if(default_weight < 0): default_weight = 0

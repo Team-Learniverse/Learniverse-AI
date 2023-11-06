@@ -50,10 +50,17 @@ def learniverse_model(member_id):
 
     # 관심 있는 방 외의 가중치 
     entire_weight = 1 - default_weight
-    lang_weight = entire_weight * 0.15
-    enter_weight = entire_weight * 0.10
-    join_weight = entire_weight * 0.50
+    lang_weight = entire_weight * 0.05
+    enter_weight = entire_weight * 0.05
+    join_weight = entire_weight * 0.65
     history_weight = entire_weight * 0.25
+
+    
+    lang_weight = 0
+    enter_weight = 0
+    join_weight = 0
+    history_weight = 0
+
 
     result_df = pd.DataFrame(columns = ['roomId','finalScore'])
     result_df = cul_finalScore(result_df, default_room_based_list, default_weight)
@@ -87,7 +94,10 @@ def learniverse_model(member_id):
     rooms['order'] = rooms['roomId'].apply(lambda x: rec_ids.index(x) if x in rec_ids else len(rec_ids))
     rooms = rooms.sort_values(by=['order'])
     rooms = rooms.drop(columns=['order'])
-    print(rooms.to_string(index=False))
+
+    merged_df = pd.merge(rooms, result_df, on='roomId', how='inner')
+    #print(rooms.to_string(index=False))
+    print(merged_df.to_string(index=False))
     #merged_df = pd.merge(rooms, result_df, on='roomId', how='inner')
     #print(merged_df.sort_values(by='finalScore', ascending=False))
     return [int(x) for x in rec_ids]
@@ -165,7 +175,7 @@ def join_room_base(member_id):
         this_data = target[target['roomId'] == room_id].iloc[0]
         #diff_create_date = content_based.cul_date((this_data['createdDate']))
         
-        if this_data.name == 'pinDate':
+        if 'pinDate' in this_data.index and pd.notna(this_data['pinDate']):
             pin_date = this_data['pinDate']
         else:
             pin_date = " "
@@ -173,12 +183,13 @@ def join_room_base(member_id):
         if pin_date == " " : # pin 이 없는 경우 -> 30으로 해야 0
             diff_pin_date = 30
         else: diff_pin_date = min(content_based.cul_date(pin_date), 30) # 최소 30이어야  0 
-
+        
         for index, row in temp_df.iterrows():
             room_id = row['roomId']
             final_score = row['finalScore']
             #스터디룸 가입한 date 처리
             final_score = final_score * 0.75+(1-diff_pin_date*0.03) * 0.15
+            
             final_score = final_score/len(room_ids)
             if room_id in result_df['roomId'].values:
                 result_df.loc[result_df['roomId'] == room_id, 'finalScore'] += final_score

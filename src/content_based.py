@@ -253,13 +253,14 @@ def rec_room_list (data, target_id, target_contain):
 
     # 가중 평균을 계산하고 최종 결과 리스트에 추가
     final_score = 0.25 * float(sim_lang) + 0.1 * float(sim_name) + 0.05 * float(sim_intro)
-    final_score +=  0.1 * float(sim_hash) + 0.1 * float(sim_jaccard_hash)
+    #final_score +=  0.1 * float(sim_hash) + 0.1 * float(sim_jaccard_hash)
+    final_score +=  0.15 * float(sim_hash) + 0.15 * float(sim_jaccard_hash)
     if(sim_category):
       final_score+=0.2
 
-    if(diff_date < 7) : diff_date = 0
-    else : diff_date -= 7
-    final_score += (1-diff_date*0.03) * 0.2
+    #if(diff_date < 7) : diff_date = 0
+    #else : diff_date -= 7
+    #final_score += (1-diff_date*0.03) * 0.2
 
     room_ids.append(room_id)
     final_scores.append(final_score)

@@ -138,24 +138,40 @@ def enter_room_base(rooms, member_id):
     like_member = user_based.member_rec_list_based_enter(member_id)
     if(like_member is None): return None
     like_member_list = like_member.index.tolist()
-    result_df = pd.DataFrame(columns = ['roomId','finalScore'])
-    # 비슷한 사용자 3명 -> 서비스 확대시 5명으로 수정
-    if(like_member_list is None): return None
-    like_member_list = like_member_list[:3]
+
+    # result_df = pd.DataFrame(columns = ['roomId','finalScore'])
+    # # 비슷한 사용자 3명 -> 서비스 확대시 5명으로 수정
+    # if(like_member_list is None): return None
+    # like_member_list = like_member_list[:3]
+    # for like_member_id in like_member_list:
+    #     room_ids = user_based.find_member_rooms(like_member_id)
+    #     for room_id in room_ids:
+    #         temp_df = content_based.get_rec_room_list_id(rooms, room_id, True)
+    #         for index, row in temp_df.iterrows():
+    #             room_id = row['roomId']
+    #             #final_score에 사용자 유사도 곱하기 
+    #             final_score = row['finalScore'] * like_member[like_member_id]
+    #             final_score /= len(like_member_list)
+    #             if room_id in result_df['roomId'].values:
+    #                 result_df.loc[result_df['roomId'] == room_id, 'finalScore'] += final_score
+    #             else :
+    #                 result_df = pd.concat([result_df, row.to_frame().T], ignore_index=True)
+
+    result_dict = {}
     for like_member_id in like_member_list:
         room_ids = user_based.find_member_rooms(like_member_id)
         for room_id in room_ids:
             temp_df = content_based.get_rec_room_list_id(rooms, room_id, True)
-            for index, row in temp_df.iterrows():
+            for _, row in temp_df.iterrows():
                 room_id = row['roomId']
-                #final_score에 사용자 유사도 곱하기 
-                final_score = row['finalScore'] * like_member[like_member_id]
-                final_score /= len(like_member_list)
-                if room_id in result_df['roomId'].values:
-                    result_df.loc[result_df['roomId'] == room_id, 'finalScore'] += final_score
-                else :
-                    result_df = pd.concat([result_df, row.to_frame().T], ignore_index=True)
+                final_score = row['finalScore'] * like_member[like_member_id] / len(like_member_list)
+                if room_id in result_dict:
+                    result_dict[room_id] += final_score
+                else:
+                    result_dict[room_id] = final_score
 
+    result_df = pd.DataFrame({'roomId': list(result_dict.keys()), 'finalScore': list(result_dict.values())})
+    
     #결과 확인 
     # print(result_df.sort_values(by='finalScore', ascending=False))
    

@@ -43,9 +43,9 @@ def jaccard_similarity(s1, s2):
   return len(s1&s2)/len(s1|s2)
 
 #특정 방 정보(행 전달)와 유사한 방 리스트 : 언어, 해시태그 만 
-def get_rec_room_list_row(target_row):
-  rooms = read_data.get_data('rooms')
-  rooms = pd.concat([rooms, target_row], ignore_index=True)
+def get_rec_room_list_row(data, target_row):
+  #rooms = read_data.get_data('rooms')
+  rooms = pd.concat([data, target_row], ignore_index=True)
   rooms = rooms.fillna(" ")
 
   #집합
@@ -61,16 +61,16 @@ def get_rec_room_list_row(target_row):
   #return merged_df.sort_values(by='finalScore', ascending=False)
 
 #특정 방 정보(id 전달)와 유사한 방 리스트 : 언어, 해시태그 만 
-def get_rec_room_list_id(room_id, target_contain): # id, 해당 room_id 결과에 포함할건지
-  rooms = read_data.get_data('rooms')
-  rooms = rooms.fillna(" ")
+def get_rec_room_list_id(rooms, room_id, target_contain): # id, 해당 room_id 결과에 포함할건지
+  # rooms = read_data.get_data('rooms')
+  # rooms = rooms.fillna(" ")
 
-  #집합
-  rooms['roomLanguages'] = rooms['roomLanguages'].apply(str_to_set)
-  rooms['roomHashtagsSet'] = rooms['roomHashtags'].apply(str_to_set)
+  # #집합
+  # rooms['roomLanguages'] = rooms['roomLanguages'].apply(str_to_set)
+  # rooms['roomHashtagsSet'] = rooms['roomHashtags'].apply(str_to_set)
 
-  #정렬 
-  rooms["roomHashtags"] = rooms.apply(lambda x: data_sort(x["roomHashtags"]), axis=1)
+  # #정렬 
+  # rooms["roomHashtags"] = rooms.apply(lambda x: data_sort(x["roomHashtags"]), axis=1)
 
   return rec_room_list(rooms, room_id, target_contain)
 
@@ -84,9 +84,9 @@ def get_member_git_lang(memberId):
 
 #
 ##개발언어 리스트로 유사한 방 리스트 찾기
-def get_rec_room_list_based_lang(memberId):
-  rooms = read_data.get_data('rooms')
-  rooms = rooms.fillna(" ")
+def get_rec_room_list_based_lang(data, memberId):
+  #rooms = read_data.get_data('rooms')
+  rooms = data.fillna(" ")
 
   rooms['roomLanguages'] = rooms['roomLanguages'].apply(str_to_set)
   
@@ -128,10 +128,10 @@ def get_rec_room_list_based_lang(memberId):
 
 #
 ## 검색 기록 기반(해시태그) 유사한 방 리스트 찾기
-def get_rec_room_list_based_history(member_id):
+def get_rec_room_list_based_history(data, member_id):
   #데이터 처리 
-  rooms = read_data.get_data('rooms')
-  rooms = rooms.fillna(" ")
+  #rooms = read_data.get_data('rooms')
+  rooms = data.fillna(" ")
 
   #set 집합으로 바꾸는야
   rooms['roomHashtags'] =  rooms['roomHashtags'].apply(str_to_set)
@@ -186,7 +186,7 @@ def get_rec_room_list_based_history(member_id):
   result = result.sort_values(by='finalScore', ascending=False)
   return result[:top]
   
-#
+
 ##특정 방 id로 유사한 방 점 수 계산
 def rec_room_list (data, target_id, target_contain):
   target = data.loc[data['roomId'] == target_id].iloc[0]

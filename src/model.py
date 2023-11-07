@@ -1,35 +1,71 @@
 import pandas as pd
 import read_data
 import content_based, user_based
+import concurrent.futures
+
+def rooms_set(data):
+    rooms = data.fillna(" ")
+
+    #집합
+    rooms['roomLanguages'] = rooms['roomLanguages'].apply(content_based.str_to_set)
+    rooms['roomHashtagsSet'] = rooms['roomHashtags'].apply(content_based.str_to_set)
+
+    #정렬 
+    rooms["roomHashtags"] = rooms.apply(lambda x: content_based.data_sort(x["roomHashtags"]), axis=1)
+
+    return rooms
 
 def learniverse_model(member_id):
     rooms = read_data.get_data('rooms')
-    rooms = rooms.fillna(" ")
+    rooms_p_set = rooms_set(rooms)
     def_rooms = read_data.get_data('defaultRooms')
 
     target = read_data.get_data_find_member('joins',member_id)
     joins_default = target[target['isDefault'] == True] 
     joins = target[target['isDefault'] == False] 
-    print("join_room")
-    print(pd.merge(rooms, joins, on='roomId', how='inner').to_string(index=False))
-    print("dafault_room")
-    print(pd.merge(def_rooms, joins_default, on='roomId', how='inner').to_string(index=False))
+    #print("join_room")
+    #print(pd.merge(rooms, joins, on='roomId', how='inner').to_string(index=False))
+    #print("dafault_room")
+    #print(pd.merge(def_rooms, joins_default, on='roomId', how='inner').to_string(index=False))
     
     result_df = pd.DataFrame(columns = ['roomId','finalScore'])
 
+    # #관심있는 방 기반 
+    # default_room_based_list = default_room_based(rooms, member_id)
+    
+    # #깃헙 : 깃허브 사용 코드에 따른 정보 20
+    # git_lang_based_list = git_lang_based(rooms_p_set, rooms, member_id)
+
+    # ##사용자 기록 
+    # #유사 사용자 - 방 접속 횟수에 따른 
+    # enter_based_list = enter_room_base(rooms_p_set, member_id)
+    # #가입했던 방과 유사한 방 
+    # join_room_based_list = join_room_base(rooms_p_set, member_id)
+    # #검색어 기반
+    # history_based_list = content_based.get_rec_room_list_based_history(rooms, member_id)
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
+        futures = [
+            executor.submit(default_room_based, rooms, member_id),
+            executor.submit(git_lang_based, rooms_p_set, rooms, member_id),
+            executor.submit(enter_room_base, rooms_p_set, member_id),
+            executor.submit(join_room_base, rooms_p_set, member_id),
+            executor.submit(content_based.get_rec_room_list_based_history, rooms, member_id)
+        ]
+
+    results = [future.result() for future in concurrent.futures.as_completed(futures)]
     #관심있는 방 기반 
-    default_room_based_list = default_room_based(member_id)
+    default_room_based_list = results[0]
     
     #깃헙 : 깃허브 사용 코드에 따른 정보 20
-    git_lang_based_list = git_lang_based(member_id)
-
+    git_lang_based_list = results[1]
     ##사용자 기록 
     #유사 사용자 - 방 접속 횟수에 따른 
-    enter_based_list = enter_room_base(member_id)
+    enter_based_list = results[2]
     #가입했던 방과 유사한 방 
-    join_room_based_list = join_room_base(member_id)
+    join_room_based_list = results[3]
     #검색어 기반
-    history_based_list = content_based.get_rec_room_list_based_history(member_id)
+    history_based_list = results[4]
 
     #
     ##결과 합치기 
@@ -54,13 +90,6 @@ def learniverse_model(member_id):
     enter_weight = entire_weight * 0.05
     join_weight = entire_weight * 0.65
     history_weight = entire_weight * 0.25
-
-    
-    lang_weight = 0
-    enter_weight = 0
-    join_weight = 0
-    history_weight = 0
-
 
     result_df = pd.DataFrame(columns = ['roomId','finalScore'])
     result_df = cul_finalScore(result_df, default_room_based_list, default_weight)
@@ -90,14 +119,14 @@ def learniverse_model(member_id):
     
     #ret = rec_ids[:5]
 
-    print("-----result-----")
+    #print("-----result-----")
     rooms['order'] = rooms['roomId'].apply(lambda x: rec_ids.index(x) if x in rec_ids else len(rec_ids))
     rooms = rooms.sort_values(by=['order'])
     rooms = rooms.drop(columns=['order'])
 
     merged_df = pd.merge(rooms, result_df, on='roomId', how='inner')
     #print(rooms.to_string(index=False))
-    print(merged_df.to_string(index=False))
+    #print(merged_df.to_string(index=False))
     #merged_df = pd.merge(rooms, result_df, on='roomId', how='inner')
     #print(merged_df.sort_values(by='finalScore', ascending=False))
     return [int(x) for x in rec_ids]
@@ -127,7 +156,7 @@ def cul_finalScore(result_df, merge_df, weight):
     
 
 #방 접속한 횟수에 따른 사용자 + 사용자 정보와 유사한 방
-def enter_room_base(member_id):
+def enter_room_base(rooms, member_id):
     like_member = user_based.member_rec_list_based_enter(member_id)
     if(like_member is None): return None
     like_member_list = like_member.index.tolist()
@@ -138,7 +167,7 @@ def enter_room_base(member_id):
     for like_member_id in like_member_list:
         room_ids = user_based.find_member_rooms(like_member_id)
         for room_id in room_ids:
-            temp_df = content_based.get_rec_room_list_id(room_id, True)
+            temp_df = content_based.get_rec_room_list_id(rooms, room_id, True)
             for index, row in temp_df.iterrows():
                 room_id = row['roomId']
                 #final_score에 사용자 유사도 곱하기 
@@ -160,7 +189,7 @@ def enter_room_base(member_id):
     return result_df.sort_values(by='finalScore', ascending=False)
 
 #가입한 방들과 유사한 방
-def join_room_base(member_id):
+def join_room_base(rooms, member_id):
     joins = read_data.get_data('joins')
     joins = joins.fillna(" ")
     target = joins[joins['memberId'] == member_id]
@@ -169,7 +198,7 @@ def join_room_base(member_id):
 
     result_df = pd.DataFrame(columns = ['roomId','finalScore'])
     for room_id in room_ids:
-        temp_df = content_based.get_rec_room_list_id(room_id, False)
+        temp_df = content_based.get_rec_room_list_id(rooms, room_id, False)
         
         #date 정보 
         this_data = target[target['roomId'] == room_id].iloc[0]
@@ -203,7 +232,7 @@ def join_room_base(member_id):
 
 
 # 관심있는 방 기반으로 가져오기
-def default_room_based(member_id):
+def default_room_based(rooms, member_id):
     joins = read_data.get_data('joins')
     joins = joins[joins['memberId'] == member_id]
     joins = joins[joins['isDefault'] != False]
@@ -214,7 +243,7 @@ def default_room_based(member_id):
     for room_id in default_roomIds :
         target_row = default_rooms[default_rooms['roomId'] == room_id].iloc[0]
         target_row['roomId'] = 0
-        temp_df = content_based.get_rec_room_list_row(target_row.to_frame().T)
+        temp_df = content_based.get_rec_room_list_row(rooms, target_row.to_frame().T)
         for index, row in temp_df.iterrows():
             room_id = row['roomId']
             final_score = row['finalScore'] / len(default_roomIds)
@@ -228,7 +257,7 @@ def default_room_based(member_id):
     return result_df.sort_values(by='finalScore', ascending=False)
 
 # 깃허브 언어기반 리스트 받아오기 
-def git_lang_based(member_id):
+def git_lang_based(rooms_p_set, rooms, member_id):
     like_member = user_based.get_lang_member_list(member_id)
     if(like_member is None): return None
     like_member_list = like_member.index.tolist()
@@ -239,7 +268,7 @@ def git_lang_based(member_id):
     for like_member_id in like_member_list:
         room_ids = user_based.find_member_rooms(like_member_id)
         for room_id in room_ids:
-            temp_df = content_based.get_rec_room_list_id(room_id, True)
+            temp_df = content_based.get_rec_room_list_id(rooms_p_set, room_id, True)
             for index, row in temp_df.iterrows():
                 room_id = row['roomId']
                 #사용자 유사도 기반 
@@ -254,7 +283,7 @@ def git_lang_based(member_id):
     result_df['finalScore'] = result_df['finalScore'] * 0.5
 
     #개발 언어와 비슷한 언어 
-    temp_df = content_based.get_rec_room_list_based_lang(member_id)
+    temp_df = content_based.get_rec_room_list_based_lang(rooms, member_id)
     for index, row in temp_df.iterrows():
         room_id = row['roomId']
         final_score = row['finalScore'] * 0.5 # 콘텐츠 기반 0.5

@@ -2,17 +2,16 @@ import pandas as pd
 import read_data
 import content_based, user_based
 import concurrent.futures
+from functools import partial
 
+#데이터 처리
 def rooms_set(data):
     rooms = data.fillna(" ")
-
     #집합
     rooms['roomLanguages'] = rooms['roomLanguages'].apply(content_based.str_to_set)
     rooms['roomHashtagsSet'] = rooms['roomHashtags'].apply(content_based.str_to_set)
-
     #정렬 
     rooms["roomHashtags"] = rooms.apply(lambda x: content_based.data_sort(x["roomHashtags"]), axis=1)
-
     return rooms
 
 def learniverse_model(member_id):
@@ -30,33 +29,19 @@ def learniverse_model(member_id):
     
     result_df = pd.DataFrame(columns = ['roomId','finalScore'])
 
-    # #관심있는 방 기반 
-    # default_room_based_list = default_room_based(rooms, member_id)
-    
-    # #깃헙 : 깃허브 사용 코드에 따른 정보 20
-    # git_lang_based_list = git_lang_based(rooms_p_set, rooms, member_id)
-
-    # ##사용자 기록 
-    # #유사 사용자 - 방 접속 횟수에 따른 
-    # enter_based_list = enter_room_base(rooms_p_set, member_id)
-    # #가입했던 방과 유사한 방 
-    # join_room_based_list = join_room_base(rooms_p_set, member_id)
-    # #검색어 기반
-    # history_based_list = content_based.get_rec_room_list_based_history(rooms, member_id)
+    functions = [
+        partial(default_room_based, rooms),
+        partial(git_lang_based, rooms_p_set, rooms),
+        partial(enter_room_base, rooms_p_set),
+        partial(join_room_base, rooms_p_set),
+        partial(content_based.get_rec_room_list_based_history, rooms)
+    ]
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
-        futures = [
-            executor.submit(default_room_based, rooms, member_id),
-            executor.submit(git_lang_based, rooms_p_set, rooms, member_id),
-            executor.submit(enter_room_base, rooms_p_set, member_id),
-            executor.submit(join_room_base, rooms_p_set, member_id),
-            executor.submit(content_based.get_rec_room_list_based_history, rooms, member_id)
-        ]
+        results = list(executor.map(lambda func: func(member_id), functions))
 
-    results = [future.result() for future in concurrent.futures.as_completed(futures)]
     #관심있는 방 기반 
     default_room_based_list = results[0]
-    
     #깃헙 : 깃허브 사용 코드에 따른 정보 20
     git_lang_based_list = results[1]
     ##사용자 기록 
@@ -93,19 +78,12 @@ def learniverse_model(member_id):
 
     result_df = pd.DataFrame(columns = ['roomId','finalScore'])
     result_df = cul_finalScore(result_df, default_room_based_list, default_weight)
-    #print("--------------------------default--------------------------")
-    #print(result_df.sort_values(by='finalScore', ascending=False))
     result_df = cul_finalScore(result_df, git_lang_based_list, lang_weight)
-    #print("--------------------------lang--------------------------")
-    #print(result_df.sort_values(by='finalScore', ascending=False))
     result_df = cul_finalScore(result_df, enter_based_list, enter_weight)
-    #print("--------------------------enter--------------------------")
-    #print(result_df.sort_values(by='finalScore', ascending=False))
     result_df = cul_finalScore(result_df, join_room_based_list, join_weight)
-    #print("--------------------------join_room--------------------------")
-    #print(result_df.sort_values(by='finalScore', ascending=False))
     result_df = cul_finalScore(result_df, history_based_list, history_weight)
     
+    #print(result_df.sort_values(by='finalScore', ascending=False))
     result_df = result_df.sort_values(by='finalScore', ascending=False)
     rec_ids = result_df['roomId'].tolist()
 

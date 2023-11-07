@@ -92,9 +92,7 @@ def get_lang_member_list(target_id):
   target = user_sim_df.loc[target_id]
   target = target.drop(target_id)
   #print(target) : date 적용 전후 비교를 위한 print 문
-  # 0보다 작은 값 제외 
-  target = target[target > 0]
-
+  
   #유사한 멤버 list 반복문 둘면서 유사한 방 check 
   members = read_data.get_data('members')
   for idx, score in target.items():
@@ -102,10 +100,13 @@ def get_lang_member_list(target_id):
     this_data = members[members['memberId']==member_id].iloc[0]
     this_date = this_data['lastLoginDate']
     diff_date = cul_date(this_date)
-    final_score = float(score) * 0.4 + (1-diff_date*0.03) * 0.6
+    final_score = float(score) * 0.7 + (1-diff_date*0.03) * 0.3
     target[idx] = final_score
+  
+  # 0보다 작은 값 제외 
+  target = target[target > 0]
 
-  #print(target)
+  print(target)
   target = target.sort_values(ascending=False)
   #return target.index.tolist()
   return target
